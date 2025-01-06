@@ -24,14 +24,20 @@ async function run() {
     const cartCollection = client.db("bistro-boss").collection("cart");
     const userCollection = client.db("bistro-boss").collection("user");
 
-    // user releted api 
+    // user releted api
 
-    app.post('/users' ,  async (req,res)=>{
-      const user = req.body 
-      console.log(user)
-      const result = await userCollection.insertOne(user)
-      res.send(result)
-    })
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+
+      const existingUser = await userCollection.findOne({ email: user.email });
+      if (existingUser) {
+        return res.send({ massage: "user already exist" });
+      }
+
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+    
 
     app.get("/menu", async (req, res) => {
       const menu = await menuCollection.find().toArray();
@@ -46,18 +52,17 @@ async function run() {
       }
     });
     app.get("/cart", async (req, res) => {
-      const email = req.query.email
-      
-      const cart = await cartCollection.find({email:email}).toArray();
-      res.send(cart)
-      
+      const email = req.query.email;
+
+      const cart = await cartCollection.find({ email: email }).toArray();
+      res.send(cart);
     });
-    app.delete('/cart/:id', async(req,res)=>{
-      const id = req.params.id 
-      const query = {_id : new ObjectId(id)}
-      const result = await cartCollection.deleteOne(query)
-      res.send(result)
-    })
+    app.delete("/cart/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    });
 
     console.log("You successfully connected to MongoDB!");
   } finally {
