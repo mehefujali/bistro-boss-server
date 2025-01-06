@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const port = process.env.PORT || 8080;
 //Middle ware
@@ -24,6 +25,33 @@ async function run() {
     const cartCollection = client.db("bistro-boss").collection("cart");
     const userCollection = client.db("bistro-boss").collection("user");
 
+    // middlewares
+
+    const verifyToken = (req, res, next) => {
+      if (!req.headers.authorization) {
+        return res.status(401).send({ massage: "unauthorize access" });
+      }
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ massage: "unauthorize access" });
+        }
+        req.decoded = decoded;
+
+        next();
+      });
+    };
+
+    // jwt releted api
+
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "20min",
+      });
+      res.send({ token });
+    });
+
     // user releted api
 
     app.post("/users", async (req, res) => {
@@ -37,7 +65,7 @@ async function run() {
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyToken, async (req, res) => {
       const users = await userCollection.find().toArray();
       res.send(users);
     });
@@ -57,6 +85,18 @@ async function run() {
       };
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
+    });
+    app.get("/user/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (!req.decoded.email === email) {
+        return res.status(403).send({ massage: "forbidden" });
+      }
+      const result = await userCollection.findOne({ email: email });
+      let isAdmin = false;
+      if (result) {
+        isAdmin = result?.role === "admin";
+      }
+      res.send({isAdmin})
     });
 
     // food releted
