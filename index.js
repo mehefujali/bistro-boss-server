@@ -57,7 +57,7 @@ async function run() {
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "20min",
+        expiresIn: "2hr",
       });
       res.send({ token });
     });
@@ -133,6 +133,14 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await cartCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // add food releted
+
+    app.post("/food", verifyToken, verifyAdmin, async (req, res) => {
+      const foodItem = req.body;
+      const result = await menuCollection.insertOne(foodItem);
       res.send(result);
     });
 
