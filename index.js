@@ -25,6 +25,7 @@ async function run() {
     const menuCollection = client.db("bistro-boss").collection("menu");
     const cartCollection = client.db("bistro-boss").collection("cart");
     const userCollection = client.db("bistro-boss").collection("user");
+    const paymentCollection = client.db("bistro-boss").collection("payment");
 
     // middlewares
 
@@ -160,6 +161,20 @@ async function run() {
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    });
+
+    // payment save
+    app.post("/payment-save", async (req, res) => {
+      const paymentDetails = req.body;
+      const result = await paymentCollection.insertOne(paymentDetails);
+      
+      const query = {
+        _id: {
+          $in: paymentDetails.cartId.map((id) => new ObjectId(id)),
+        },
+      };
+      const deleteResult = await cartCollection.deleteMany(query)
+      res.send({result,deleteResult});
     });
 
     console.log("You successfully connected to MongoDB!");
