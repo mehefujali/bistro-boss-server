@@ -1,8 +1,9 @@
 const express = require("express");
+require("dotenv").config();
 const cors = require("cors");
 const app = express();
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 8080;
 //Middle ware
 app.use(cors());
@@ -142,6 +143,23 @@ async function run() {
       const foodItem = req.body;
       const result = await menuCollection.insertOne(foodItem);
       res.send(result);
+    });
+
+    // Payment
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+
+      const amount = parseInt(price * 100);
+      console.log(amount);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
 
     console.log("You successfully connected to MongoDB!");
