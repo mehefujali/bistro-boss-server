@@ -137,6 +137,17 @@ async function run() {
       const result = await cartCollection.deleteOne(query);
       res.send(result);
     });
+    app.patch("/cart/quantity/:id", async (req, res) => {
+      const quantity = req.body;
+      const id = req.params.id;
+      const updateDoc = {
+        $set: {
+          quantity,
+        },
+      };
+      const result = await cartCollection.updateOne({ _id: new ObjectId(id) } , updateDoc);
+      res.send(result);
+    });
 
     // add food releted
 
@@ -152,7 +163,7 @@ async function run() {
       const { price } = req.body;
 
       const amount = parseInt(price * 100);
-      console.log(amount);
+
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
@@ -167,14 +178,14 @@ async function run() {
     app.post("/payment-save", async (req, res) => {
       const paymentDetails = req.body;
       const result = await paymentCollection.insertOne(paymentDetails);
-      
+
       const query = {
         _id: {
           $in: paymentDetails.cartId.map((id) => new ObjectId(id)),
         },
       };
-      const deleteResult = await cartCollection.deleteMany(query)
-      res.send({result,deleteResult});
+      const deleteResult = await cartCollection.deleteMany(query);
+      res.send({ result, deleteResult });
     });
 
     console.log("You successfully connected to MongoDB!");
